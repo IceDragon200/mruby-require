@@ -561,33 +561,14 @@ mrb_init_load_path(mrb_state *mrb)
 void
 mrb_mruby_require_gem_init(mrb_state* mrb)
 {
-  char *env;
   struct RClass *krn;
   krn = mrb->kernel_module;
 
   mrb_define_method(mrb, krn, "load",    mrb_f_load,    ARGS_REQ(1));
   mrb_define_method(mrb, krn, "require", mrb_f_require, ARGS_REQ(1));
 
-  mrb_gv_set(mrb, mrb_intern_cstr(mrb, "$:"), mrb_init_load_path(mrb));
-  mrb_gv_set(mrb, mrb_intern_cstr(mrb, "$\""), mrb_ary_new(mrb));
-
-  env = getenv("MRUBY_REQUIRE");
-  if (env != NULL) {
-    int i, envlen;
-    envlen = strlen(env);
-    for (i = 0; i < envlen; i++) {
-      char *ptr = env + i;
-      char *end = strchr(ptr, ',');
-      int len;
-      if (end == NULL) {
-        end = env + envlen;
-      }
-      len = end - ptr;
-
-      mrb_require(mrb, mrb_str_new(mrb, ptr, len));
-      i += len;
-    }
-  }
+  mrb_gv_set(mrb, mrb_intern(mrb, "$:"), mrb_init_load_path(mrb));
+  mrb_gv_set(mrb, mrb_intern(mrb, "$\""), mrb_ary_new(mrb));
 }
 
 void
