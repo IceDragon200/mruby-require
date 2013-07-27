@@ -399,11 +399,9 @@ load_rb_file(mrb_state *mrb, mrb_value filepath)
   char *fpath = RSTRING_PTR(filepath);
   mrbc_context *mrbc_ctx;
 
-  {
-    if (!exists(fpath)) {
-      mrb_raisef(mrb, E_LOAD_ERROR, "can't load %S", filepath);
-      return;
-    }
+  if (!exists(fpath)) {
+    mrb_raisef(mrb, E_LOAD_ERROR, "can't load %S", filepath);
+    return;
   }
 
   mrbc_ctx = mrbc_context_new(mrb);
