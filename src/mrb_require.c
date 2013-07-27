@@ -28,6 +28,17 @@
 #include <libgen.h>
 #endif
 
+#include <sys/stat.h>
+// _WIN32 is set for both 32 and 64 bit
+#ifdef _WIN32
+#  define stat _stat
+#endif
+
+static int exists(const char* name) {
+  struct stat buffer;
+  return (stat(name, &buffer) == 0);
+};
+
 #ifdef _WIN32
 #include <windows.h>
 #define dlopen(x,y) (void*)LoadLibrary(x)
@@ -116,7 +127,6 @@ envpath_to_mrb_ary(mrb_state *mrb, const char *name)
 static mrb_value
 find_file_check(mrb_state *mrb, mrb_value path, mrb_value fname, mrb_value ext)
 {
-  FILE *fp;
   char fpath[MAXPATHLEN];
   mrb_value filepath = mrb_str_dup(mrb, path);
   mrb_str_cat2(mrb, filepath, "/");
@@ -135,11 +145,9 @@ find_file_check(mrb_state *mrb, mrb_value path, mrb_value fname, mrb_value ext)
   }
   debug("fpath: %s\n", fpath);
 
-  fp = fopen(fpath, "r");
-  if (fp == NULL) {
+  if (!exists(fpath)) {
     return mrb_nil_value();
   }
-  fclose(fp);
 
   return mrb_str_new_cstr(mrb, fpath);
 }
@@ -182,21 +190,17 @@ find_file(mrb_state *mrb, mrb_value filename)
   /* Absolute paths on Windows */
 #ifdef _WIN32
   if (fname[1] == ':') {
-    fp = fopen(fname, "r");
-    if (fp == NULL) {
+    if (!exists(fname)) {
       return mrb_nil_value();
     }
-    fclose(fp);
     return filename;
   }
 #endif
   /* when absolute path */
   if (*fname == '/') {
-    fp = fopen(fname, "r");
-    if (fp == NULL) {
+    if (!exists(fname)) {
       return mrb_nil_value();
     }
-    fclose(fp);
     return filename;
   }
 
@@ -243,12 +247,10 @@ load_mrb_file(mrb_state *mrb, mrb_value filepath)
   mrb_irep *irep;
 
   {
-    FILE *fp = fopen(fpath, "r");
-    if (fp == NULL) {
+    if (!exists(fpath)) {
       mrb_raisef(mrb, E_LOAD_ERROR, "can't load %S", mrb_str_new_cstr(mrb, fpath));
       return;
     }
-    fclose(fp);
   }
 
   arena_idx = mrb_gc_arena_save(mrb);
@@ -398,12 +400,10 @@ load_rb_file(mrb_state *mrb, mrb_value filepath)
   mrbc_context *mrbc_ctx;
 
   {
-    FILE *fp = fopen(fpath, "r");
-    if (fp == NULL) {
+    if (!exists(fpath)) {
       mrb_raisef(mrb, E_LOAD_ERROR, "can't load %S", filepath);
       return;
     }
-    fclose(fp);
   }
 
   mrbc_ctx = mrbc_context_new(mrb);
