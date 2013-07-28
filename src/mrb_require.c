@@ -179,7 +179,9 @@ find_file(mrb_state *mrb, mrb_value filename)
 
   ext = strrchr(ptr, '.');
   exts = mrb_ary_new(mrb);
-  if (ext == NULL) {
+  /* (ext - fname) if the occurence is at the start of the
+     filename, then it's not an extension at all */
+  if (ext == NULL || ext - fname == 0) {
     mrb_ary_push(mrb, exts, mrb_str_new_cstr(mrb, ".rb"));
     mrb_ary_push(mrb, exts, mrb_str_new_cstr(mrb, ".mrb"));
     mrb_ary_push(mrb, exts, mrb_str_new_cstr(mrb, ".so"));
