@@ -555,6 +555,8 @@ mrb_init_load_path(mrb_state *mrb)
     mrb_ary_push(mrb, ary, mrb_str_new_cstr(mrb, MRBGEMS_ROOT));
 #endif
 
+  mrb_ary_push(mrb, ary, mrb_str_new_cstr(mrb, "."));
+
   return ary;
 }
 
