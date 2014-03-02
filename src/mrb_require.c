@@ -14,6 +14,8 @@
 #include "mruby/array.h"
 #include "mruby/numeric.h"
 
+#include "setjmp.h"
+
 #include "opcode.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -158,7 +160,6 @@ find_file(mrb_state *mrb, mrb_value filename)
   char *ext, *ptr, *tmp;
   mrb_value exts;
   int i, j;
-  FILE *fp;
 
   char *fname = RSTRING_PTR(filename);
   mrb_value filepath = mrb_nil_value();
@@ -410,7 +411,7 @@ load_rb_file(mrb_state *mrb, mrb_value filepath)
 
   file = fopen((const char*)fpath, "r");
   mrbc_filename(mrb, mrbc_ctx, fpath);
-  mrb_gv_set(mrb, mrb_intern_cstr(mrb, "$0", 2), filepath);
+  mrb_gv_set(mrb, mrb_intern_cstr(mrb, "$0"), filepath);
   mrb_load_file_cxt(mrb, file, mrbc_ctx);
   fclose(file);
 
