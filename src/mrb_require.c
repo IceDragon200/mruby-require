@@ -410,7 +410,7 @@ load_rb_file(mrb_state *mrb, mrb_value filepath)
 
   file = fopen((const char*)fpath, "r");
   mrbc_filename(mrb, mrbc_ctx, fpath);
-  mrb_gv_set(mrb, mrb_intern(mrb, "$0", 2), filepath);
+  mrb_gv_set(mrb, mrb_intern_cstr(mrb, "$0", 2), filepath);
   mrb_load_file_cxt(mrb, file, mrbc_ctx);
   fclose(file);
 
@@ -569,8 +569,8 @@ mrb_mruby_require_gem_init(mrb_state* mrb)
   mrb_define_method(mrb, krn, "load",    mrb_f_load,    ARGS_REQ(1));
   mrb_define_method(mrb, krn, "require", mrb_f_require, ARGS_REQ(1));
 
-  mrb_gv_set(mrb, mrb_intern(mrb, "$:"), mrb_init_load_path(mrb));
-  mrb_gv_set(mrb, mrb_intern(mrb, "$\""), mrb_ary_new(mrb));
+  mrb_gv_set(mrb, mrb_intern_cstr(mrb, "$:"), mrb_init_load_path(mrb));
+  mrb_gv_set(mrb, mrb_intern_cstr(mrb, "$\""), mrb_ary_new(mrb));
 }
 
 void
