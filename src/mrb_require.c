@@ -193,7 +193,7 @@ find_file(mrb_state *mrb, mrb_value filename)
   /* Absolute paths on Windows */
 #ifdef _WIN32
   if (fname[1] == ':') {
-    fp = fopen(fname, "r");
+    FILE *fp = fopen(fname, "r");
     if (fp == NULL) {
       goto not_found;
     }
@@ -202,7 +202,7 @@ find_file(mrb_state *mrb, mrb_value filename)
 #endif
   /* when absolute path */
   if (*fname == '/') {
-    fp = fopen(fname, "r");
+    FILE *fp = fopen(fname, "r");
     if (fp == NULL) {
       goto not_found;
     }
