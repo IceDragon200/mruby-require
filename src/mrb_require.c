@@ -19,15 +19,20 @@
 #include "opcode.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <setjmp.h>
 #include <sys/types.h>
 #include <limits.h>
-#ifdef _MSC_VER
-#define PATH_MAX MAX_PATH
+#include <setjmp.h>
+#if defined(_MSC_VER) || defined(__MINGW32__)
+#ifndef PATH_MAX
+# define PATH_MAX MAX_PATH
+#endif
 #define strdup(x) _strdup(x)
 #else
 #include <sys/param.h>
 #include <unistd.h>
 #include <libgen.h>
+#include <dlfcn.h>
 #endif
 
 #include <sys/stat.h>
@@ -79,7 +84,7 @@ realpath(const char *path, char *resolved_path) {
 # define ENV_SEP ':'
 #endif
 
-#define E_LOAD_ERROR (mrb_module_get(mrb, "ScriptError"))
+#define E_LOAD_ERROR (mrb_class_get(mrb, "ScriptError"))
 
 #ifndef MAXPATHLEN
 #define MAXPATHLEN 1024
@@ -91,11 +96,6 @@ realpath(const char *path, char *resolved_path) {
 #else
 # define debug(...) ((void)0)
 #endif
-
-extern mrb_value mrb_file_exist(mrb_state *mrb, mrb_value fname);
-
-mrb_value
-mrb_yield_internal(mrb_state *mrb, mrb_value b, int argc, mrb_value *argv, mrb_value self, struct RClass *c);
 
 static mrb_value
 envpath_to_mrb_ary(mrb_state *mrb, const char *name)
@@ -193,16 +193,18 @@ find_file(mrb_state *mrb, mrb_value filename)
   /* Absolute paths on Windows */
 #ifdef _WIN32
   if (fname[1] == ':') {
-    if (!exists(fname)) {
-      return mrb_nil_value();
+    fp = fopen(fname, "r");
+    if (fp == NULL) {
+      goto not_found;
     }
     return filename;
   }
 #endif
   /* when absolute path */
   if (*fname == '/') {
-    if (!exists(fname)) {
-      return mrb_nil_value();
+    fp = fopen(fname, "r");
+    if (fp == NULL) {
+      goto not_found;
     }
     return filename;
   }
@@ -226,6 +228,7 @@ find_file(mrb_state *mrb, mrb_value filename)
     }
   }
 
+not_found:
   mrb_raisef(mrb, E_LOAD_ERROR, "cannot load such file -- %S", filename);
   return mrb_nil_value();
 }
@@ -250,7 +253,8 @@ load_mrb_file(mrb_state *mrb, mrb_value filepath)
   mrb_irep *irep;
 
   {
-    if (!exists(fpath)) {
+    FILE *fp = fopen(fpath, "rb");
+    if (fp == NULL) {
       mrb_raisef(mrb, E_LOAD_ERROR, "can't load %S", mrb_str_new_cstr(mrb, fpath));
       return;
     }
@@ -258,7 +262,7 @@ load_mrb_file(mrb_state *mrb, mrb_value filepath)
 
   arena_idx = mrb_gc_arena_save(mrb);
 
-  fp = fopen(fpath, "r");
+  fp = fopen(fpath, "rb");
   irep = mrb_read_irep_file(mrb, fp);
   fclose(fp);
 
@@ -278,7 +282,7 @@ load_mrb_file(mrb_state *mrb, mrb_value filepath)
     proc->target_class = mrb->object_class;
 
     arena_idx = mrb_gc_arena_save(mrb);
-    mrb_yield_internal(mrb, mrb_obj_value(proc), 0, NULL, mrb_top_self(mrb), mrb->object_class);
+    mrb_yield_with_class(mrb, mrb_obj_value(proc), 0, NULL, mrb_top_self(mrb), mrb->object_class);
     mrb_gc_arena_restore(mrb, arena_idx);
   } else if (mrb->exc) {
     // fail to load
@@ -286,7 +290,7 @@ load_mrb_file(mrb_state *mrb, mrb_value filepath)
   }
 }
 
-void
+static void
 mrb_load_irep_data(mrb_state* mrb, const uint8_t* data)
 {
   int ai = mrb_gc_arena_save(mrb);
@@ -302,7 +306,7 @@ mrb_load_irep_data(mrb_state* mrb, const uint8_t* data)
     proc->target_class = mrb->object_class;
 
     ai = mrb_gc_arena_save(mrb);
-    mrb_yield_internal(mrb, mrb_obj_value(proc), 0, NULL, mrb_top_self(mrb), mrb->object_class);
+    mrb_yield_with_class(mrb, mrb_obj_value(proc), 0, NULL, mrb_top_self(mrb), mrb->object_class);
     mrb_gc_arena_restore(mrb, ai);
   } else if (mrb->exc) {
     // fail to load
