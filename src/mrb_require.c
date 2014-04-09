@@ -193,17 +193,16 @@ find_file(mrb_state *mrb, mrb_value filename)
   /* Absolute paths on Windows */
 #ifdef _WIN32
   if (fname[1] == ':') {
-    FILE *fp = fopen(fname, "r");
-    if (fp == NULL) {
+    if (!exists(fname)) {
       goto not_found;
     }
     return filename;
   }
 #endif
+
   /* when absolute path */
   if (*fname == '/') {
-    FILE *fp = fopen(fname, "r");
-    if (fp == NULL) {
+    if (!exists(fname)) {
       goto not_found;
     }
     return filename;
@@ -252,12 +251,9 @@ load_mrb_file(mrb_state *mrb, mrb_value filepath)
   FILE *fp;
   mrb_irep *irep;
 
-  {
-    FILE *fp = fopen(fpath, "rb");
-    if (fp == NULL) {
-      mrb_raisef(mrb, E_LOAD_ERROR, "can't load %S", mrb_str_new_cstr(mrb, fpath));
-      return;
-    }
+  if (!exists(fpath)) {
+    mrb_raisef(mrb, E_LOAD_ERROR, "can't load %S", mrb_str_new_cstr(mrb, fpath));
+    return;
   }
 
   arena_idx = mrb_gc_arena_save(mrb);
@@ -549,19 +545,8 @@ mrb_f_require(mrb_state *mrb, mrb_value self)
 static mrb_value
 mrb_init_load_path(mrb_state *mrb)
 {
-  char *env;
-  mrb_value ary = envpath_to_mrb_ary(mrb, "MRBLIB");
-
-  env = getenv("MRBGEMS_ROOT");
-  if (env)
-    mrb_ary_push(mrb, ary, mrb_str_new_cstr(mrb, env));
-#ifdef MRBGEMS_ROOT
-  else
-    mrb_ary_push(mrb, ary, mrb_str_new_cstr(mrb, MRBGEMS_ROOT));
-#endif
-
+  mrb_value ary = mrb_ary_new(mrb);
   mrb_ary_push(mrb, ary, mrb_str_new_cstr(mrb, "."));
-
   return ary;
 }
 
