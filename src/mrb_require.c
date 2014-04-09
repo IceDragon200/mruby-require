@@ -98,35 +98,6 @@ realpath(const char *path, char *resolved_path) {
 #endif
 
 static mrb_value
-envpath_to_mrb_ary(mrb_state *mrb, const char *name)
-{
-  int i;
-  int envlen;
-  mrb_value ary = mrb_ary_new(mrb);
-
-  char *env= getenv(name);
-  if (env == NULL) {
-    return ary;
-  }
-
-  envlen = strlen(env);
-  for (i = 0; i < envlen; i++) {
-    char *ptr = env + i;
-    char *end = strchr(ptr, ENV_SEP);
-    int len;
-    if (end == NULL) {
-      end = env + envlen;
-    }
-    len = end - ptr;
-    mrb_ary_push(mrb, ary, mrb_str_new(mrb, ptr, len));
-    i += len;
-  }
-
-  return ary;
-}
-
-
-static mrb_value
 find_file_check(mrb_state *mrb, mrb_value path, mrb_value fname, mrb_value ext)
 {
   char fpath[MAXPATHLEN];
